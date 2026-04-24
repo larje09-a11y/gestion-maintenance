@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demande de réparation</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a;
+      --accent: #e8c97a; --accent2: #c4a85a;
+      --text: #f0eee8; --muted: #7a7d8e;
+      --bubble-bot: #1e2133; --border: rgba(232,201,122,0.15); --radius: 18px;
+    }
+    body { background:var(--bg); font-family:'DM Sans',sans-serif; color:var(--text); min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:16px; }
+    body::before { content:''; position:fixed; inset:0; background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(232,201,122,0.06) 0%,transparent 70%); pointer-events:none; }
+    .container { width:100%; max-width:480px; display:flex; flex-direction:column; }
+    .header { background:var(--surface); border:1px solid var(--border); border-bottom:none; border-radius:var(--radius) var(--radius) 0 0; padding:20px 24px 18px; display:flex; align-items:center; gap:14px; }
+    .header-icon { width:42px; height:42px; background:var(--accent); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+    .header-text h1 { font-family:'DM Serif Display',serif; font-size:17px; letter-spacing:.01em; }
+    .header-text p { font-size:12px; color:var(--muted); margin-top:2px; }
+    .status-dot { width:7px; height:7px; background:#4ade80; border-radius:50%; margin-left:auto; box-shadow:0 0 6px rgba(74,222,128,0.6); animation:pulse 2s infinite; }
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .chat-window { background:var(--surface); border:1px solid var(--border); border-top:none; border-bottom:none; min-height:420px; max-height:58vh; overflow-y:auto; padding:20px 16px; display:flex; flex-direction:column; gap:12px; scroll-behavior:smooth; }
+    .chat-window::-webkit-scrollbar{width:4px} .chat-window::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:4px}
+    .message { display:flex; flex-direction:column; max-width:88%; animation:fadeUp .3s ease; }
+    @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .message.bot{align-self:flex-start} .message.user{align-self:flex-end}
+    .bubble { padding:11px 15px; border-radius:14px; font-size:14px; line-height:1.6; }
+    .message.bot .bubble { background:var(--bubble-bot); border:1px solid var(--border); border-bottom-left-radius:4px; }
+    .message.user .bubble { background:var(--accent); color:#1a1a14; font-weight:500; border-bottom-right-radius:4px; }
+    .typing { display:flex; align-items:center; gap:5px; padding:14px 16px; background:var(--bubble-bot); border:1px solid var(--border); border-radius:14px; border-bottom-left-radius:4px; width:fit-content; }
+    .typing span { width:6px; height:6px; background:var(--muted); border-radius:50%; animation:bounce 1.2s infinite; }
+    .typing span:nth-child(2){animation-delay:.2s} .typing span:nth-child(3){animation-delay:.4s}
+    @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+    .options { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+    .option-btn { background:transparent; border:1px solid var(--accent); color:var(--accent); padding:7px 14px; border-radius:20px; font-family:'DM Sans',sans-serif; font-size:13px; cursor:pointer; transition:all .2s; }
+    .option-btn:hover { background:var(--accent); color:#1a1a14; }
+    .option-btn.green { border-color:#4ade80; color:#4ade80; }
+    .option-btn.green:hover { background:#4ade80; color:#111; }
+    .option-btn.warn { border-color:#f87171; color:#f87171; }
+    .option-btn.warn:hover { background:#f87171; color:#fff; }
+    .input-area { background:var(--surface); border:1px solid var(--border); border-radius:0 0 var(--radius) var(--radius); padding:14px 16px; display:flex; gap:10px; align-items:flex-end; }
+    .input-area textarea { flex:1; background:var(--surface2); border:1px solid rgba(255,255,255,0.06); border-radius:12px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:14px; padding:10px 14px; resize:none; outline:none; max-height:120px; min-height:42px; line-height:1.5; transition:border-color .2s; }
+    .input-area textarea:focus{border-color:rgba(232,201,122,0.35)} .input-area textarea::placeholder{color:var(--muted)} .input-area textarea:disabled{opacity:.4;cursor:not-allowed}
+    .send-btn { width:42px; height:42px; background:var(--accent); border:none; border-radius:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .2s; }
+    .send-btn:hover{background:var(--accent2)} .send-btn:active{transform:scale(.94)} .send-btn:disabled{opacity:.4;cursor:not-allowed} .send-btn svg{color:#1a1a14}
+    .disclaimer { text-align:center; font-size:11px; color:var(--muted); margin-top:12px; opacity:.7; }
+    .success-screen { display:none; flex-direction:column; align-items:center; justify-content:center; padding:48px 24px; text-align:center; gap:16px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); }
+    .success-icon { width:64px; height:64px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:30px; }
+    .success-icon.ok{background:rgba(74,222,128,0.12)} .success-icon.resolved{background:rgba(232,201,122,0.12)}
+    .success-screen h2{font-family:'DM Serif Display',serif;font-size:22px}
+    .success-screen p{color:var(--muted);font-size:14px;line-height:1.6;max-width:300px}
+    .new-btn { margin-top:8px; background:transparent; border:1px solid var(--border); color:var(--muted); padding:10px 22px; border-radius:20px; font-family:'DM Sans',sans-serif; font-size:13px; cursor:pointer; transition:all .2s; }
+    .new-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .info-box { background:rgba(232,201,122,0.07); border:1px solid rgba(232,201,122,0.2); border-radius:12px; padding:12px 14px; font-size:13px; line-height:1.8; margin-top:4px; }
+    .info-box strong{color:var(--accent)}
+  </style>
+</head>
+<body>
+
+<div class="container" id="chatContainer">
+  <div class="header">
+    <div class="header-icon">🔧</div>
+    <div class="header-text">
+      <h1>Demandes de réparation</h1>
+      <p>Nous répondons dans les plus brefs délais</p>
+    </div>
+    <div class="status-dot"></div>
+  </div>
+  <div class="chat-window" id="chatWindow"></div>
+  <div class="input-area">
+    <textarea id="userInput" placeholder="Écrivez votre message…" rows="1"></textarea>
+    <button class="send-btn" id="sendBtn" onclick="handleSend()">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+        <line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<div class="success-screen" id="successScreen">
+  <div class="success-icon ok" id="successIcon">✅</div>
+  <h2 id="successTitle">Demande envoyée !</h2>
+  <p id="successMsg">Votre demande a bien été reçue. Vous recevrez un SMS dès que la date de passage sera confirmée.</p>
+  <button class="new-btn" onclick="resetChat()">Soumettre une nouvelle demande</button>
+</div>
+
+<p class="disclaimer">Système de gestion des réparations · Confidentiel</p>
+
+<script>
+  // ============================================================
+  // CONFIGURATION
+  // ============================================================
+  const MAKE_WEBHOOK_URL = "https://hook.us2.make.com/xuvsfkwa0x1lalu1gj7ajbb8n6kgrsgw";
+  // ============================================================
+
+  // Guides de troubleshooting par catégorie
+  const TROUBLESHOOT = {
+    elec: `Voici quelques vérifications rapides à faire :<br><br><div class='info-box'>1️⃣ Rendez-vous au <strong>panneau électrique</strong> et vérifiez si un disjoncteur est en position <strong>OFF ou au milieu</strong>. Si oui, remettez-le en position <strong>ON</strong> fermement.<br>2️⃣ Pour les prises de salle de bain ou cuisine : cherchez un bouton <strong>RESET</strong> directement sur la prise et appuyez dessus.<br>3️⃣ Vérifiez que l'appareil ou la lampe fonctionne sur une <strong>autre prise</strong> pour isoler le problème.</div>`,
+    eau:  `Voici quelques vérifications pour l'eau chaude :<br><br><div class='info-box'>1️⃣ Vérifiez le <strong>panneau électrique</strong> — le disjoncteur du chauffe-eau est-il bien en position ON ?<br>2️⃣ Après l'avoir remis, attendez <strong>30 à 45 minutes</strong> — l'eau met du temps à chauffer.<br>3️⃣ Vérifiez que le <strong>thermostat du chauffe-eau</strong> n'a pas été baissé accidentellement (il devrait être à ~60°C).</div>`,
+    chauffage: `Voici quelques vérifications pour le chauffage ou la climatisation :<br><br><div class='info-box'>1️⃣ Vérifiez que le <strong>thermostat</strong> est réglé à la bonne température et en bon mode (chauffe / refroidissement).<br>2️⃣ Vérifiez le <strong>panneau électrique</strong> — le disjoncteur de l'unité est-il ON ?<br>3️⃣ Si filtre à air : un <strong>filtre encrassé</strong> bloque complètement le système — vérifiez-le.<br>4️⃣ Assurez-vous que les <strong>bouches d'aération</strong> ne sont pas bloquées par des meubles.</div>`,
+    plomb: `Voici quelques vérifications pour la plomberie :<br><br><div class='info-box'>1️⃣ <strong>Fuite visible</strong> : fermez immédiatement la <strong>valve d'arrêt</strong> sous l'évier ou derrière la toilette pour limiter les dégâts.<br>2️⃣ <strong>Évier ou bain bouché</strong> : essayez une <strong>ventouse</strong> — souvent suffisant pour les bouchons légers.<br>3️⃣ <strong>Toilette qui coule</strong> : soulevez le couvercle du réservoir et vérifiez si le flotteur ou la valve sont mal positionnés.<br>4️⃣ <strong>Pas d'eau</strong> : vérifiez que la valve principale sous l'évier est bien ouverte.</div>`,
+    electro: `Voici quelques vérifications pour l'électroménager :<br><br><div class='info-box'>1️⃣ Vérifiez que l'appareil est bien <strong>branché</strong> et testez la prise avec un autre appareil.<br>2️⃣ Vérifiez le <strong>panneau électrique</strong> — le disjoncteur cuisine / buanderie est-il ON ?<br>3️⃣ <strong>Frigo</strong> : vérifiez la température et que les grilles arrière ne sont pas bloquées.<br>4️⃣ <strong>Laveuse / sécheuse</strong> : filtre à charpie propre ? La porte ferme-t-elle bien ?<br>5️⃣ <strong>Éteignez et rallumez</strong> l'appareil après 1 minute complète.</div>`,
+    serrure: `Voici quelques vérifications pour la serrure ou la porte :<br><br><div class='info-box'>1️⃣ <strong>Serrure électronique</strong> : les <strong>piles</strong> sont-elles à plat ? Une pile faible bloque souvent l'ouverture.<br>2️⃣ <strong>Porte qui frotte</strong> : par temps humide le bois gonfle — c'est souvent temporaire.<br>3️⃣ <strong>Clé difficile à tourner</strong> : un peu de <strong>lubrifiant (WD-40)</strong> dans la serrure peut régler ça.<br>4️⃣ <strong>Porte qui ne ferme plus</strong> : vérifiez si les <strong>gonds</strong> sont desserrés.</div>`,
+    interphone: `Voici quelques vérifications pour l'interphone :<br><br><div class='info-box'>1️⃣ L'appareil est-il bien <strong>alimenté</strong> (voyant allumé) ?<br>2️⃣ Si sans-fil : vérifiez les <strong>piles</strong> du combiné.<br>3️⃣ Vérifiez que le <strong>volume</strong> n'est pas au minimum.<br>4️⃣ Faites tester par quelqu'un qui sonne depuis l'extérieur.</div>`,
+    autre: null
+  };
+
+  const INFO_STEPS = [
+    { key:"nom",     q:"Bonjour ! 👋 Pour commencer, quel est votre <strong>nom complet</strong> ?" },
+    { key:"adresse", q:"Quelle est l'<strong>adresse de votre immeuble</strong> ?<br><small style='color:var(--muted)'>(ex : 1234 rue Principale, Montréal)</small>" },
+    { key:"apt",     q:"Quel est votre <strong>numéro d'appartement</strong> ?" },
+    { key:"tel",     q:"Quel est votre <strong>numéro de téléphone</strong> ? Nous vous enverrons un SMS pour confirmer la date de passage.<br><small style='color:var(--muted)'>(ex : 514-555-1234)</small>" },
+    { key:"desc",    q:"Décrivez votre problème en quelques mots." },
+  ];
+
+  let S = { phase:"info", infoStep:0, data:{}, catId:null, inputEnabled:true };
+
+  const chatWindow = document.getElementById("chatWindow");
+  const userInput  = document.getElementById("userInput");
+  const sendBtn    = document.getElementById("sendBtn");
+
+  function setInput(on) { S.inputEnabled=on; userInput.disabled=!on; sendBtn.disabled=!on; }
+
+  function addMsg(html, type="bot") {
+    const m=document.createElement("div"); m.className=`message ${type}`;
+    const b=document.createElement("div"); b.className="bubble"; b.innerHTML=html;
+    m.appendChild(b); chatWindow.appendChild(m);
+    chatWindow.scrollTop=chatWindow.scrollHeight;
+  }
+
+  function showTyping() {
+    const t=document.createElement("div"); t.className="message bot"; t.id="typ";
+    t.innerHTML=`<div class="typing"><span></span><span></span><span></span></div>`;
+    chatWindow.appendChild(t); chatWindow.scrollTop=chatWindow.scrollHeight;
+  }
+
+  function botSay(html, delay=750) {
+    return new Promise(res => {
+      setInput(false); showTyping();
+      setTimeout(()=>{ document.getElementById("typ")?.remove(); addMsg(html); setInput(true); userInput.focus(); res(); }, delay);
+    });
+  }
+
+  function showOptions(opts, cb) {
+    setInput(false);
+    const m=document.createElement("div"); m.className="message bot"; m.id="opts";
+    const d=document.createElement("div"); d.className="options";
+    opts.forEach(o=>{
+      const btn=document.createElement("button"); btn.className="option-btn";
+      if(o.includes("✅")) btn.classList.add("green");
+      if(o.includes("❌")) btn.classList.add("warn");
+      btn.innerHTML=o;
+      btn.onclick=()=>{ document.getElementById("opts")?.remove(); setInput(true); cb(o); };
+      d.appendChild(btn);
+    });
+    m.appendChild(d); chatWindow.appendChild(m); chatWindow.scrollTop=chatWindow.scrollHeight;
+  }
+
+  async function handleSend() {
+    if(!S.inputEnabled) return;
+    const val=userInput.value.trim(); if(!val) return;
+    userInput.value=""; userInput.style.height="auto";
+    addMsg(val,"user");
+    if(S.phase==="info") await doInfo(val);
+    else if(S.phase==="confirm_ticket") await doConfirm(val);
+  }
+
+  async function doInfo(val) {
+    const key=INFO_STEPS[S.infoStep].key;
+
+    if(key==="tel" && val.replace(/\D/g,"").length<10) {
+      await botSay("⚠️ Ce numéro ne semble pas valide. Entrez 10 chiffres, ex: <strong>514-555-1234</strong>"); return;
+    }
+
+    S.data[key]=val; S.infoStep++;
+
+    if(S.infoStep < INFO_STEPS.length) {
+      await botSay(INFO_STEPS[S.infoStep].q); return;
+    }
+
+    // Toutes les infos collectées → analyser la description avec l'IA
+    await doTroubleshoot();
+  }
+
+  async function doTroubleshoot() {
+    setInput(false); showTyping();
+
+    // Appel API Claude pour détecter la catégorie et générer une réponse de troubleshooting
+    let categoryId = "autre";
+    let aiResponse = null;
+
+    try {
+      const systemPrompt = `Tu es un assistant de gestion immobilière résidentielle à Montréal. 
+Un locataire vient de décrire un problème dans son appartement.
+
+Ta tâche :
+1. Identifier la catégorie parmi : elec, eau, chauffage, plomb, electro, serrure, interphone, autre
+2. Rédiger un message de troubleshooting en français québécois, chaleureux et clair, adapté exactement au problème décrit.
+
+Réponds UNIQUEMENT en JSON valide, sans backticks, sans explication :
+{
+  "categorie": "elec|eau|chauffage|plomb|electro|serrure|interphone|autre",
+  "label_categorie": "description courte du problème",
+  "troubleshooting": "HTML avec les étapes à suivre. Utilise <br> pour les sauts de ligne et <strong> pour les mots importants. Commence directement par les étapes sans phrase d'intro générique. Maximum 4 étapes pertinentes pour CE problème spécifique."
+}`;
+
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          system: systemPrompt,
+          messages: [{ role:"user", content:`Problème décrit par le locataire : "${S.data.desc}"` }]
+        })
+      });
+
+      const data = await res.json();
+      const text = data.content?.find(b=>b.type==="text")?.text || "";
+      const parsed = JSON.parse(text.replace(/```json|```/g,"").trim());
+      categoryId = parsed.categorie || "autre";
+      S.data.categorie = parsed.label_categorie || S.data.desc;
+      aiResponse = parsed.troubleshooting;
+
+    } catch(e) {
+      // Fallback sur la détection locale si l'API échoue
+      const desc = S.data.desc.toLowerCase();
+      if(/prise|disjoncteur|lumière|lumiere|courant|électrique|electrique|ampoule/.test(desc)) categoryId="elec";
+      else if(/eau chaude|chauffe-eau|douche froide/.test(desc)) categoryId="eau";
+      else if(/chauffage|chaleur|froid|clim|climatisation|thermostat/.test(desc)) categoryId="chauffage";
+      else if(/fuite|robinet|toilette|évier|evier|bouché|bouche|tuyau/.test(desc)) categoryId="plomb";
+      else if(/frigo|cuisinière|cuisiniere|laveuse|sécheuse|secheuse|four|micro-onde/.test(desc)) categoryId="electro";
+      else if(/serrure|porte|clé|cle|verrou|gond/.test(desc)) categoryId="serrure";
+      else if(/interphone|sonnette|intercom|buzzer/.test(desc)) categoryId="interphone";
+      S.data.categorie = S.data.desc;
+    }
+
+    S.catId = categoryId;
+    document.getElementById("typ")?.remove();
+
+    // Afficher le guide de troubleshooting
+    const tsGuide = aiResponse
+      ? `<div class='info-box'>${aiResponse}</div>`
+      : (TROUBLESHOOT[categoryId] || null);
+
+    if(!tsGuide) {
+      // Pas de troubleshooting possible → aller directement à la confirmation
+      setInput(true);
+      await showConfirmation();
+      return;
+    }
+
+    addMsg(`Avant d'envoyer un technicien, essayons quelques vérifications rapides :<br><br>${tsGuide}`);
+    setInput(true);
+
+    await new Promise(res => setTimeout(res, 400));
+    showOptions(["✅ Oui, le problème est réglé !", "❌ Non, toujours le même problème"], async ans => {
+      addMsg(ans, "user");
+      if(ans.includes("réglé")) {
+        await botSay("Super ! 🎉 Ravi que ce soit réglé. N'hésitez pas à nous recontacter si le problème revient.");
+        showSuccess(true); return;
+      }
+      await showConfirmation();
+    });
+  }
+
+  async function showConfirmation() {
+    S.phase = "confirm_ticket";
+    await botSay(
+      `D'accord, nous allons envoyer un technicien. Voici un résumé de votre demande :<br><br>
+       👤 <strong>${S.data.nom}</strong><br>
+       🏠 <strong>${S.data.adresse}</strong>, app. <strong>${S.data.apt}</strong><br>
+       📱 <strong>${S.data.tel}</strong><br>
+       🔧 ${S.data.categorie}<br>
+       📝 ${S.data.desc}<br><br>
+       Est-ce que tout est correct ?`, 900
+    );
+    showOptions(["✅ Envoyer ma demande", "✏️ Recommencer"], async ans => {
+      addMsg(ans, "user");
+      if(ans.includes("Recommencer")){ resetChat(); return; }
+      await submit();
+    });
+  }
+
+  async function doConfirm(val) {
+    // Géré via les boutons, texte libre ignoré en phase confirm
+  }
+
+  async function submit() {
+    await botSay("Envoi en cours…", 400);
+    const payload = {
+      nom: S.data.nom,
+      adresse: S.data.adresse,
+      appartement: S.data.apt,
+      telephone: S.data.tel,
+      categorie: S.data.categorie,
+      description: S.data.desc,
+      date_demande: new Date().toLocaleString("fr-CA", {timeZone:"America/Toronto"})
+    };
+    try {
+      await fetch(MAKE_WEBHOOK_URL, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(payload)
+      });
+    } catch(e){}
+    showSuccess(false);
+  }
+
+  function showSuccess(resolved) {
+    document.getElementById("chatContainer").style.display="none";
+    document.getElementById("successScreen").style.display="flex";
+    if(resolved){
+      document.getElementById("successIcon").textContent="🎉";
+      document.getElementById("successIcon").className="success-icon resolved";
+      document.getElementById("successTitle").textContent="Problème résolu !";
+      document.getElementById("successMsg").textContent="Excellent ! Vous avez réglé le problème vous-même. Si cela se reproduit, contactez-nous.";
+    }
+  }
+
+  function resetChat() {
+    S={phase:"info",infoStep:0,data:{},catId:null,inputEnabled:true};
+    chatWindow.innerHTML="";
+    document.getElementById("successScreen").style.display="none";
+    document.getElementById("chatContainer").style.display="flex";
+    setInput(true); start();
+  }
+
+  userInput.addEventListener("input",()=>{ userInput.style.height="auto"; userInput.style.height=Math.min(userInput.scrollHeight,120)+"px"; });
+  userInput.addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();handleSend();} });
+
+  async function start() { await botSay(INFO_STEPS[0].q); }
+  start();
+</script>
+</body>
+</html>

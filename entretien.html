@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Équipe d'entretien</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f5f2ec;
+      --surface: #ffffff;
+      --surface2: #f0ede6;
+      --border: #e0dbd0;
+      --text: #1a1a18;
+      --muted: #8a8880;
+      --accent: #d45c2a;
+      --accent-light: #f5e8e1;
+      --green: #2a7d4f;
+      --green-light: #e3f2ea;
+      --yellow: #c8900a;
+      --yellow-light: #fef6e0;
+      --radius: 14px;
+    }
+    body {
+      background: var(--bg);
+      font-family: 'Instrument Sans', sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0 0 80px;
+    }
+
+    /* Grain texture overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
+    }
+
+    .header {
+      background: var(--text);
+      color: #f5f2ec;
+      padding: 20px 24px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-logo {
+      width: 36px; height: 36px;
+      background: var(--accent);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .header h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .header p { font-size: 12px; color: rgba(245,242,236,0.5); margin-top: 1px; }
+    .badge {
+      background: var(--accent);
+      color: white;
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    .main { padding: 24px 16px; position: relative; z-index: 1; max-width: 600px; margin: 0 auto; }
+
+    .section-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+      padding-left: 2px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 12px;
+      overflow: hidden;
+      transition: box-shadow 0.2s;
+      animation: slideIn 0.35s ease both;
+    }
+    .card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-header {
+      padding: 16px 18px 12px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .card-meta { flex: 1; min-width: 0; }
+    .card-apt {
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .card-name { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .card-addr { font-size: 12px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .status-pill {
+      flex-shrink: 0;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .status-pill.attente  { background: var(--yellow-light); color: var(--yellow); }
+    .status-pill.planifie { background: var(--green-light);  color: var(--green);  }
+
+    .card-desc {
+      margin: 0 18px 14px;
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--text);
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 10px 13px;
+      border-left: 3px solid var(--accent);
+    }
+
+    .card-body { padding: 0 18px 16px; display: flex; flex-direction: column; gap: 10px; }
+
+    .date-row { display: flex; align-items: center; gap: 10px; }
+    .date-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      white-space: nowrap;
+      min-width: 100px;
+    }
+    .date-input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'Instrument Sans', sans-serif;
+      font-size: 14px;
+      padding: 8px 12px;
+      outline: none;
+      transition: border-color 0.2s;
+      cursor: pointer;
+    }
+    .date-input:focus { border-color: var(--accent); }
+
+    .confirm-btn {
+      width: 100%;
+      background: var(--text);
+      color: #f5f2ec;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 11px;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .confirm-btn:hover { background: var(--accent); }
+    .confirm-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .done-btn {
+      width: 100%;
+      background: var(--green-light);
+      color: var(--green);
+      border: 1.5px solid var(--green);
+      border-radius: 10px;
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 11px;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .done-btn:hover { background: var(--green); color: white; }
+
+    .date-display {
+      font-size: 13px;
+      color: var(--green);
+      font-weight: 600;
+      background: var(--green-light);
+      padding: 8px 12px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--text);
+      color: #f5f2ec;
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 12px 20px;
+      border-radius: 30px;
+      opacity: 0;
+      transition: all 0.35s ease;
+      pointer-events: none;
+      z-index: 999;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 24px;
+      color: var(--muted);
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+    .empty-state h3 { font-family: 'Syne', sans-serif; font-size: 18px; color: var(--text); margin-bottom: 8px; }
+    .empty-state p { font-size: 14px; line-height: 1.6; }
+
+    .loading-state { text-align: center; padding: 48px 24px; }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .refresh-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      color: var(--muted);
+      font-family: 'Instrument Sans', sans-serif;
+      font-size: 13px;
+      padding: 8px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .refresh-btn:hover { border-color: var(--text); color: var(--text); }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .card-date-info {
+      font-size: 11px;
+      color: var(--muted);
+      padding: 0 18px 14px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="header-logo">🔧</div>
+    <div>
+      <h1>Équipe d'entretien</h1>
+      <p>Tâches actives</p>
+    </div>
+  </div>
+  <div class="badge" id="taskCount">—</div>
+</div>
+
+<div class="main">
+  <div class="top-bar">
+    <div class="section-label">Demandes en cours</div>
+    <button class="refresh-btn" onclick="loadTasks()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M23 4v6h-6M1 20v-6h6"/>
+        <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+      </svg>
+      Actualiser
+    </button>
+  </div>
+
+  <div id="taskList"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ============================================================
+  // CONFIGURATION — même webhook Make.com, endpoint différent
+  // ============================================================
+  const MAKE_WEBHOOK_UPDATE = "https://hook.us2.make.com/w56fu4cv0oero43hstx93zaksxyrkw8q";
+  const MAKE_WEBHOOK_DONE   = "https://hook.us2.make.com/clcfhp4bf5sl4zxtsiwk681jp3o4jvg8";
+
+  // URL de ton Google Sheet publié en JSON
+  // (Fichier → Partager → Publier sur le web → Onglet "En cours" → Format JSON)
+  const SHEET_JSON_URL = "https://docs.google.com/spreadsheets/d/17PojVDHAWeofWv_bGgMlmP1B6P3bXWoNIUP4uaS6oiI/gviz/tq?tqx=out:json&sheet=En cours";
+  // ============================================================
+
+  let tasks = [];
+
+  // ---- Chargement des tâches depuis Google Sheets ----
+  async function loadTasks() {
+    const list = document.getElementById("taskList");
+    list.innerHTML = `<div class="loading-state"><div class="spinner"></div><p style="color:var(--muted);font-size:14px">Chargement des tâches…</p></div>`;
+
+    try {
+      const res = await fetch(SHEET_JSON_URL + "&t=" + Date.now());
+      const text = await res.text();
+      // Google Sheets JSON wraps in /*O_o*/ callback — strip it
+      const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/)?.[1] || text);
+      const rows = json.table?.rows || [];
+
+      tasks = rows.map((row, i) => {
+        const cells = row.c || [];
+        return {
+          id:          cells[0]?.v || `T-${i+1}`,
+          date_demande:cells[1]?.v || "",
+          nom:         cells[2]?.v || "",
+          adresse:     cells[3]?.v || "",
+          apt:         cells[4]?.v || "",
+          tel:         cells[5]?.v || "",
+          categorie:   cells[6]?.v || "",
+          description: cells[7]?.v || "",
+          date_passage:cells[8]?.v || "",
+          sms_envoye:  cells[9]?.v || "",
+          statut:      cells[10]?.v || "En attente",
+        };
+      }).filter(t => t.nom); // Filtrer lignes vides
+
+    } catch(e) {
+      // Mode démo si le sheet n'est pas encore configuré
+      tasks = getDemoTasks();
+    }
+
+    renderTasks();
+  }
+
+  function getDemoTasks() {
+    return [
+      { id:"REP-2026-04-24 10 h 40 min 15 s", date_demande:"2025-04-23", nom:"Marie Tremblay", adresse:"1234 rue Principale, Montréal", apt:"3B", tel:"514-555-1001", categorie:"⚡ Électricité", description:"La prise dans la cuisine ne fonctionne plus depuis hier soir. J'ai vérifié le disjoncteur mais tout semble normal.", date_passage:"", sms_envoye:"", statut:"En attente" },
+      { id:"REP-002", date_demande:"2025-04-22", nom:"Jean-François Côté", adresse:"5678 av. des Érables, Montréal", apt:"1A", tel:"514-555-2002", categorie:"🚰 Plomberie", description:"Fuite sous l'évier de la salle de bain. L'eau coule lentement mais continuellement.", date_passage:"2025-04-25", sms_envoye:"Oui", statut:"Planifié" },
+      { id:"REP-003", date_demande:"2025-04-23", nom:"Sophie Bergeron", adresse:"9012 boul. Saint-Laurent, Montréal", apt:"7C", tel:"514-555-3003", categorie:"🌡️ Chauffage", description:"Le chauffage ne s'allume plus dans la chambre. Les autres pièces fonctionnent bien.", date_passage:"", sms_envoye:"", statut:"En attente" },
+    ];
+  }
+
+  function renderTasks() {
+    const list = document.getElementById("taskList");
+    const badge = document.getElementById("taskCount");
+
+    if(!tasks.length) {
+      badge.textContent = "0";
+      list.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">✅</div>
+          <h3>Aucune tâche en cours</h3>
+          <p>Toutes les demandes ont été traitées.<br>Actualisez pour vérifier les nouvelles demandes.</p>
+        </div>`;
+      return;
+    }
+
+    badge.textContent = tasks.length;
+    list.innerHTML = tasks.map((t, i) => buildCard(t, i)).join("");
+  }
+
+  function buildCard(t, i) {
+    const isPlanifie = t.statut === "Planifié" && t.date_passage;
+    const delay = i * 0.06;
+
+    return `
+    <div class="card" style="animation-delay:${delay}s" id="card-${t.id}">
+      <div class="card-header">
+        <div class="card-meta">
+          <div class="card-apt">App. ${t.apt}</div>
+          <div class="card-name">${t.nom}</div>
+          <div class="card-addr">📍 ${t.adresse}</div>
+        </div>
+        <span class="status-pill ${isPlanifie ? 'planifie' : 'attente'}">
+          ${isPlanifie ? '📅 Planifié' : '⏳ En attente'}
+        </span>
+      </div>
+
+      <div class="card-date-info">
+        🕐 Demande reçue le ${formatDate(t.date_demande)} · 📱 ${t.tel}
+      </div>
+
+      <div class="card-desc">${t.description}</div>
+
+      <div class="card-body">
+        ${isPlanifie ? `
+          <div class="date-display">✅ Passage prévu le ${formatDate(t.date_passage)}</div>
+          <button class="done-btn" onclick="markDone('${t.id}')">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Marquer comme terminé
+          </button>
+        ` : `
+          <div class="date-row">
+            <span class="date-label">📅 Date de passage</span>
+            <input type="date" class="date-input" id="date-${t.id}" min="${new Date().toISOString().split('T')[0]}" />
+          </div>
+          <button class="confirm-btn" onclick="confirmDate('${t.id}', '${t.tel}', '${t.nom}')">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+            Confirmer & envoyer SMS au locataire
+          </button>
+        `}
+      </div>
+    </div>`;
+  }
+
+  async function confirmDate(taskId, tel, nom) {
+    const dateInput = document.getElementById(`date-${taskId}`);
+    const dateVal = dateInput?.value;
+    if(!dateVal) { showToast("⚠️ Choisissez une date d'abord"); return; }
+
+    const btn = document.querySelector(`#card-${taskId} .confirm-btn`);
+    if(btn) { btn.disabled = true; btn.innerHTML = `<div style="width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.8s linear infinite"></div> Envoi…`; }
+
+    try {
+      await fetch(MAKE_WEBHOOK_UPDATE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ task_id: taskId, date_passage: dateVal, telephone: tel, nom_locataire: nom, action: "set_date" })
+      });
+    } catch(e){}
+
+    // Mettre à jour localement
+    const task = tasks.find(t => t.id === taskId);
+    if(task) { task.date_passage = dateVal; task.statut = "Planifié"; }
+    renderTasks();
+    showToast(`✅ SMS envoyé à ${nom}`);
+  }
+
+  async function markDone(taskId) {
+    const btn = document.querySelector(`#card-${taskId} .done-btn`);
+    if(btn) { btn.disabled = true; btn.textContent = "Envoi…"; }
+
+    try {
+      await fetch(MAKE_WEBHOOK_DONE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ task_id: taskId, action: "done", date_completion: new Date().toISOString().split('T')[0] })
+      });
+    } catch(e){}
+
+    // Retirer la carte avec animation
+    const card = document.getElementById(`card-${taskId}`);
+    if(card) { card.style.transition = "all 0.4s ease"; card.style.opacity = "0"; card.style.transform = "translateX(40px)"; setTimeout(()=>{ tasks = tasks.filter(t => t.id !== taskId); renderTasks(); }, 400); }
+    showToast("🎉 Tâche marquée comme terminée");
+  }
+
+  function formatDate(dateStr) {
+    if(!dateStr) return "—";
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString("fr-CA", { day:"numeric", month:"long", year:"numeric" });
+    } catch { return dateStr; }
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 3000);
+  }
+
+  loadTasks();
+</script>
+</body>
+</html>
