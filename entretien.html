@@ -348,7 +348,7 @@
     try {
       const sheetId = "17PojVDHAWeofWv_bGgMlmP1B6P3bXWoNIUP4uaS6oiI";
       const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&sheet=En%20cours`;
-      const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(csvUrl);
+      const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(csvUrl);
       const res = await fetch(proxyUrl);
       const text = await res.text();
 
