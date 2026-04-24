@@ -346,35 +346,54 @@
     list.innerHTML = `<div class="loading-state"><div class="spinner"></div><p style="color:var(--muted);font-size:14px">Chargement des tâches…</p></div>`;
 
     try {
-      const res = await fetch(SHEET_JSON_URL + "&t=" + Date.now());
+      const sheetId = "17PojVDHAWeofWv_bGgMlmP1B6P3bXWoNIUP4uaS6oiI";
+      const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&sheet=En%20cours`;
+      const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(csvUrl);
+      const res = await fetch(proxyUrl);
       const text = await res.text();
-      // Google Sheets JSON wraps in /*O_o*/ callback — strip it
-      const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/)?.[1] || text);
-      const rows = json.table?.rows || [];
 
-      tasks = rows.map((row, i) => {
-        const cells = row.c || [];
+      const lines = text.trim().split("\n").slice(1);
+      tasks = lines.map((line, i) => {
+        const cells = parseCSVLine(line);
         return {
-          id:          cells[0]?.v || `T-${i+1}`,
-          date_demande:cells[1]?.v || "",
-          nom:         cells[2]?.v || "",
-          adresse:     cells[3]?.v || "",
-          apt:         cells[4]?.v || "",
-          tel:         cells[5]?.v || "",
-          categorie:   cells[6]?.v || "",
-          description: cells[7]?.v || "",
-          date_passage:cells[8]?.v || "",
-          sms_envoye:  cells[9]?.v || "",
-          statut:      cells[10]?.v || "En attente",
+          id:           cells[0] || `T-${i+1}`,
+          date_demande: cells[1] || "",
+          nom:          cells[2] || "",
+          adresse:      cells[3] || "",
+          apt:          cells[4] || "",
+          tel:          cells[5] || "",
+          categorie:    cells[6] || "",
+          description:  cells[7] || "",
+          date_passage: cells[8] || "",
+          sms_envoye:   cells[9] || "",
+          statut:       cells[10] || "En attente",
         };
-      }).filter(t => t.nom); // Filtrer lignes vides
+      }).filter(t => t.nom);
 
     } catch(e) {
-      // Mode démo si le sheet n'est pas encore configuré
       tasks = getDemoTasks();
     }
 
     renderTasks();
+  }
+
+  function parseCSVLine(line) {
+    const result = [];
+    let current = "";
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQuotes && line[i+1] === '"') { current += '"'; i++; }
+        else inQuotes = !inQuotes;
+      } else if (ch === ',' && !inQuotes) {
+        result.push(current.trim()); current = "";
+      } else {
+        current += ch;
+      }
+    }
+    result.push(current.trim());
+    return result;
   }
 
   function getDemoTasks() {
